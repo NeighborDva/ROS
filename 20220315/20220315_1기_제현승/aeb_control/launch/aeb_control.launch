@@ -1,5 +1,0 @@
-<launch>
-
-<node pkg="aeb_control" type="aeb_controller_node" name="abs_controller_node" output="screen"/>
-
-</launch>
