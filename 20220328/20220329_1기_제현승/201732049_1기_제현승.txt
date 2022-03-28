@@ -1,0 +1,894 @@
+ 1.int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void), void *arg);
+          
+* 쓰레드 생성을 위해서 사용 
+* 첫번째 아규먼트인 thread 는 쓰레드가 성공적으로 생성되었을때 생성된 쓰레드를 식별하기 위해서 사용되는 쓰레드 식별자
+* 두번째 아규먼트인 attr 은 쓰레드 특성을 지정하기 위해서 사용하며, 기본 쓰레드 특성을 이용하고자 할경우에 NULL 을 사용
+* 3번째 아규먼트인 start_routine는 분기시켜서 실행할 쓰레드 함수
+* 4번째 아규먼는인 arg는 쓰레드 함수의 인자
+* 성공적으로 생성될경우 0을 리턴하며, 실패하면 0보다 작은수를 리턴
+    
+
+ //예제
+
+#include <pthread.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+// 쓰레드 함수
+void *t_function(void *data)
+{
+    int id;
+    int i = 0;
+    id = *((int *)data);
+
+
+ 
+    while(1)
+    {
+        printf("%d : %d\n", id, i);
+        i++;
+        sleep(1);
+    }
+}
+
+int main()
+{
+    pthread_t p_thread[2];
+    int thr_id;
+    int status;
+    int a = 1;
+    int b = 2;
+
+    // 쓰레드 생성 아규먼트로 1 을 넘긴다.  
+    thr_id = pthread_create(&p_thread[0], NULL, t_function, (void *)&a);
+    if (thr_id < 0)
+    {
+        perror("thread create error : ");
+        exit(0);
+    }
+
+    // 쓰레드 생성 아규먼트로 2 를 넘긴다. 
+    thr_id = pthread_create(&p_thread[1], NULL, t_function, (void *)&b);
+    if (thr_id < 0)
+    {
+        perror("thread create error : ");
+        exit(0);
+    }
+
+    // 쓰레드 종료를 기다린다. 
+    pthread_join(p_thread[0], (void **)&status);
+    pthread_join(p_thread[1], (void **)&status);
+
+    return 0;
+}
+    
+실행된 쓰레드에 대해서는 pthread_join 등의 함수를 이용해서 쓰레드 종료때까지 기다려줘야 한다. ptherad_join 은 일종의 fork 의 wait 와 비슷하게 작동하며, 쓰레드자원을 해제 시켜준다.
+
+
+
+ 
+
+2.int pthread_join(pthread_t th, void **thread_return);
+
+*첫번째 아규먼트 th는 기다릴(join)할 쓰레드 식별자
+*두번째 아규먼트 thread_return은 쓰레드의 리턴(return) 값
+*thread_return 이 NULL 이 아닐경우 해다 포인터로 쓰레드 리턴 값을 받기 가능 
+
+ 
+
+
+#include <pthread.h>
+
+
+pthread_join.c
+
+ 
+
+#include <pthread.h>
+
+#include <stdio.h>
+
+#include <unistd.h>
+#include <stdlib.h>
+
+// 쓰레드 함수 
+// 1초를 기다린후 아규먼트^2 을 리턴한다. 
+void *t_function(void *data)
+{
+    int num = *((int *)data);
+    printf("num %d\n", num);
+    sleep(1);
+    return (void *)(num*num);
+}
+
+
+ 
+int main()
+{
+    pthread_t p_thread;
+    int thr_id;
+    int status;
+    int a = 100;
+
+    thr_id = pthread_create(&p_thread, NULL, t_function, (void *)&a);
+    if (thr_id < 0)
+    {
+        perror("thread create error : ");
+        exit(0);
+    }
+    // 쓰레드 식별자 p_thread 가 종료되길 기다렸다가 
+    // 종료리턴값을 가져온다. 
+    pthread_join(p_thread, (void *)&status);
+    printf("thread join : %d\n", status);
+
+    return 0;
+}
+   
+
+ 
+
+ 
+
+3.int pthread_detach(pthread_t th);
+ 
+*main 쓰레드에서 pthread_create 를 이용해 생성된 쓰레드를 분리 
+*식별번호th인 쓰레드를 detach 시키는데, detach 되었을경우 해당(detach 된) 쓰레드가 종료될경우 pthread_join 을 호출하지 않더라도 즉시 모든 자원이 해제(free)
+*pthread_create 호출후 detach 하는 방법과 pthread_create 호출시에 쓰레드가 detach 되도록 하는 방법도 있음
+   */
+
+ 
+
+#include <pthread.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+// 쓰레드 함수
+// 1초를 기다린후 아규먼트^2 을 리턴한다.
+void *t_function(void *data)
+{
+    char a[100000];
+    int num = *((int *)data);
+ printf("Thread Start\n");
+    sleep(5);
+ printf("Thread end\n");
+}
+
+int main()
+{
+    pthread_t p_thread;
+    int thr_id;
+    int status;
+    int a = 100;
+
+
+ 
+ printf("Before Thread\n"); 
+    thr_id = pthread_create(&p_thread, NULL, t_function, (void *)&a);
+    if (thr_id < 0)
+    {
+        perror("thread create error : ");
+        exit(0);
+    }
+    // 식별번호 p_thread 를 가지는 쓰레드를 detach 
+    // 시켜준다. 
+    pthread_detach(p_thread);
+    pause();
+    return 0;
+}
+    
+. detatach 를 했을경우 프로세스의 메모리 사용율과 detache 를 주석 처리했을경우의 메모리 사용율의 변화를 서로 비교
+->detach 를 사용하지 않았을경우 t_function 이 종료가 되더라도 자원이 해제되지 않음을 볼수 있음
+
+[root@localhost test]# while [ 1 ]; do ps -aux | grep pthread | grep -v grep | grep -v vim; sleep 1; done
+root      2668  0.0  0.1  1436  292 pts/8    S    18:37   0:00 ./pthread_detach
+root      2668  0.0  0.1  1436  292 pts/8    S    18:37   0:00 ./pthread_detach
+    
+ps 내용에서 5번째 필드의 변화를 확인하면 된다.
+
+
+ 
+
+4. void pthread_exit(void *retval);
+    
+pthread_exit 는 현재 실행중인 쓰레드를 종료시키고자 할때 사용
+만약 pthread_cleanup_push 가 정의되어 있다면, pthread_exit 가 호출될경우 cleanup handler 가 호출
+보통 이 cleanup handler 은 메모리를 정리하는 등의 일을 수행
+
+예제 
+
+ 
+
+#include <pthread.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+// 쓰레드 함수
+// 1초를 기다린후 아규먼트^2 을 리턴한다.
+void *t_function(void *data)
+{
+    int num = *((int *)data);
+    int i = 0;
+    while(1)
+    {
+        if (i == 3)
+            pthread_exit(0);
+        printf("loop %d\n", i);
+        i++;
+        sleep(1);
+    }
+}
+
+
+ 
+int main()
+{
+    pthread_t p_thread;
+    int thr_id;
+    int status;
+    int a = 100;
+
+
+    thr_id = pthread_create(&p_thread, NULL, t_function, (void *)&a);
+    if (thr_id < 0)
+    {
+        perror("thread create error : ");
+        exit(0);
+    }
+    pthread_join(p_thread, (void **)&status);
+    return 0;
+}
+   
+
+ 
+
+ 
+
+5. void pthrad_cleanup_push(void (*routine) (void *), void *arg);
+    
+이것은 cleanup handlers 를 인스톨하기 위해서 사용
+pthread_exit(3)가 호출되어서 쓰레드가 종료될때 pthread_cleanup_push 에 의해서 인스톨된 함수가 호출
+
+cleanup handlers 는 주로 자원을 되돌려주거나, mutex 잠금등의 해제를 위한 용도로 사용
+mutex 영역에서 pthread_exit 가 호출되어 버릴경우 다른쓰레드에서 영원히 block 
+ 또한 malloc 으로 할당받은 메모리, 열린 파일지정자를 닫기 위해서도 사용
+
+예제 : pthread_cleanup.c
+
+ 
+
+#include <pthread.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/types.h>
+
+// 쓰레드 함수
+// 1초를 기다린후 아규먼트^2 을 리턴한다.
+//
+
+char *mydata;
+void cleanup(void *);
+void *t_function(void *data)
+{
+    int num = *((int *)data);
+    int i = 0;
+    int a = 1;
+    // cleanup handler 로 cleanup 함수를 
+    // 지정한다. 
+    pthread_cleanup_push(cleanup, (void *)&a);
+    mydata = (char *)malloc(1000);
+    while(1)
+    {
+        if (i == 3)
+        {
+            // pthread_exit 가 호출되면서 
+            // cleanup 을 호출하게 된다. 
+            pthread_exit(0);
+            return 1;
+        }
+        printf("loop %d\n", i);
+        i++;
+        sleep(1);
+    }
+    pthread_cleanup_pop(0);
+}
+
+
+int main()
+{
+    pthread_t p_thread;
+    int thr_id;
+    int status;
+    int a = 100;
+
+
+    thr_id = pthread_create(&p_thread, NULL, t_function, (void *)&a);
+    if (thr_id < 0)
+    {
+        perror("thread create error : ");
+        exit(0);
+    }
+    pthread_join(p_thread, (void **)&status);
+    printf("Join finish\n");
+}
+
+// cleanup handler
+void cleanup(void *myarg)
+{
+    printf("thread is clean up\n");
+    printf("resource free\n");
+    free(mydata);
+}
+   
+
+ 
+
+ 
+6.void pthread_cleanup_pop(int execute);
+    
+pthread_cleanup_push 와 함께 사용되며, install 된 cleanup handler 을 제거하기 위해서 사용
+
+ 
+만약 execute 가 0 이라면, pthread_cleanup_push 에 의해 인스톨된 cleanup handler 를 (실행시키지 않고)삭제0 이 아닌 숫자라면 cleanup handler 을 실행시키고 삭제 
+
+pthread_cleanup_push 와 pthread_cleanup_pop 은 반드시 같은 함수내의 같은 레벨의 블럭에서 한쌍으로 사용
+
+
+ 
+7. pthread_t pthread_self(void);
+    
+pthread_self를 호출하는 현재 쓰래드의 쓰레드식별자를 되돌려줌
+
+예제 : pthread_self.c
+
+ 
+
+#include <pthread.h>
+#include <stdio.h>
+
+void *func(void *a)
+{
+    pthread_t id;
+    id = pthread_self();
+    printf("->%d\n", id);
+}
+
+int main(int argc, char **argv)
+{
+    pthread_t p_thread;
+    pthread_create(&p_thread, NULL, func, (void *)NULL);
+    printf("%d\n", p_thread);
+    pthread_create(&p_thread, NULL, func, (void *)NULL);
+    printf("%d\n", p_thread);
+
+ return 1;
+}
+   
+
+ 
+
+ 
+
+2. 쓰레드 동기화 함수
+
+ 쓰레드 동기화와 관련된 함수들
+
+
+ 
+
+2-1. int pthread_mutex_init(pthread_mutex_t * mutex,const pthread_mutex_attr *attr); 
+    
+mutex 는 여러개의 쓰레드가 공유하는 데이타를 보호하기 위해서 사용되는 도구
+보호하고자 하는 데이타를 다루는 코드영역을 단지 한번에 하나의 쓰레드만 실행가능 하도록 하는 방법으로 공유되는 데이터를 보호
+critical section:코드영역(하나의 쓰레드만 점유가능한),mutex 관련 API 를 이용해서 관리가능
+
+pthread_mutex_init 는 mutex 객체를 초기화 시키기 위해서 사용 
+첫번째 인자로 주어지는 mutex 객체 mutex를 초기화 
+두번째 인자인 attr 를 이용해서 mutex 특성을 변경
+ 기본 mutex 특성을 이용하기 원한다면 NULL 을 사용
+
+mutex 특성(종류) 에는 "fast", "recurisev", "error checking" 의 종류가 있으며,기본으로 "fast" 가 사용
+
+
+// 뮤텍스 객체 선언
+pthread_mutex_t mutex_lock;
+...
+void *t_function()
+{
+    pthread_mutex_lock(&mutex_lock);
+    // critical section
+    pthread_mutex_unlock(&mutex_lock);
+}
+int main()
+{
+    pthread_t p_thread;
+    int state;
+    // 뮤텍스 객체 초기화, 기본 특성으로 초기화 했음
+    pthread_mutex_init(&mutex_lock, NULL);
+    pthread_create(&p_thread, NULL, t_function, (void *)&a);
+    ...
+    pthread_join(&p_thread, (void **)&status);
+}
+   
+
+ 
+
+ 
+
+2-2.int pthread_mutex_destroy(pthread_mutex_t *mutex);
+    
+인자로 주어진 뮤텍스 객체 mutex 를 제거하기 위해서 사용 
+mutex 는 pthread_mutex_init()함수를 이용해서 생성된 뮤텍스 객체
+
+pthread_mutex_destroy를 이용해서 제대로 mutex 를 삭제하려면 이 mutex 는 반드시 unlock 상태
+
+ 
+
+2-3. int pthread_mutex_lock(pthread_mutex_t *mutex);
+    
+pthread_mutex_lock 는 critcal section 에 들어가기 위해서 mutex lock 을 요청
+만약 이미 다른 쓰레드에서 mutex lock 를 얻어서 사용하고 있다면 다른 쓰레드에서 mutex lock을 해제할때까지(사용할수 있을때까지) 블럭 
+
+만약 다른 어떤 쓰레드에서도 mutex lock 을 사용하고 있지 않다면, 즉시 mutex lock 을 얻을수 있음
+ 이후 critcal section 에 진입 
+critcal section 에서의 모든 작업을 마쳐서 사용하고 있는 mutex lock 이 더이상 필요 없다면 pthread_mutex_unlock 를 호출해서 mtuex lock 를 되돌려줌
+
+
+ 
+
+2-4. int pthread_mutex_unlock(pthread_mutex_t *mutex); 
+    
+critical section 에서의 모든 작업을 마치고 mutex lock 을 돌려주기 위해서 사용
+pthread_mutex_unlock 를 이용해서 mutex lock 를 되돌려주면 다른 쓰레드에서 mutex lock 를 얻을수 있는 상태가됨
+
+
+ 
+
+2-5. int pthread_cond_init(pthread_cond_t *cond, 
+                    const pthread_cond_attr *attr);
+    
+pthread_cond_init는 조건변수 (condition variable)cond를 초기화하기 위해서 사용 
+attr 를 이용해서 조건변수의 특성을 변경가능 
+NULL 을 줄경우 기본특성으로 초기화
+
+조건변수 cond는 상수 PTHREAD_COND_INITIALIZER 을 이용해서도 초기화가능 
+아래 예제와 같은 2가지 초기화 방법이 존재한다.
+
+ 
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+or
+pthread_cond_init(&cond, NULL);
+   
+
+ 
+
+ 
+
+2-6. int pthread_cond_signal(pthread_cond_t *cond);
+    
+조건변수 cond에 시그널을 전송 
+시그널을 보낼경우 cond에서 기다리는(wait) 쓰레드가 있다면 쓰레드를 깨우게 됨(봉쇄가 풀림). 
+만약 조건변수 cond를 기다리는 쓰레드가 없다면, 아무런 일도 일어나지 않게되며, 여러개의 쓰레드가 기다리고그중 하나의 쓰레드에게만 전달
+※이때 어떤 쓰레드에게 신호가 전달될지는 알수 없다.
+
+
+ 
+
+2-7. int pthread_cond_broadcast(pthread_cond_t *cond);
+    
+조건변수 cond에서 기다리는(wait) 모든 쓰레드에게 신호를 보낸 후 깨운다는 점을 제외하고는 pthread_cond_signal과 동일하게 작동
+
+
+ 
+
+2.8. int pthread_cond_wait(pthread_cond_t cond, pthread_mutex_t *mutex); 
+    
+조건변수 cond를 통해서 신호가 전달될때까지 블럭 
+만약 신호가 전달되지 않는다면 영원히 블럭가능 
+pthread_cond_wait는 블럭되기 전에 mutex 잠금을 자동으로 되돌려줌
+
+
+ 
+
+2-9. int pthread_cond_timedwait(pthread_cont_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime);
+    
+조건변수 cond를 통해서 신호가 전달될때까지 블럭되며 자동으로 mutex을 돌려주는 점에서는 pthread_cond_wait와 동일
+시간체크가 가능해서 abstime시간동안 신호가 도착하지 않는다면 error 를 발생하면서 리턴 이때 리턴값은 ETIMEDOUT
+errno 가 세팅되는게 아닌, 리턴값으로 에러가 넘어오는것에 주의
+
+pthread_cond_timedwait함수는 다른 signal 에 의해서 interrupted 될수 있으며 이때 EINTR 을 리턴 
+이 함수를 쓸때는 interrupted 상황에 대한 처리필요
+
+
+ 
+
+2.10. int pthread_cond_destroy(pthread_cond_t *cond);
+    
+pthread_cond_init를 통해서 생성한 조건변수cond에 대한 자원을 해제 
+destroy 함수를 호출하기 전에 어떤 쓰레드도 cond에서의 시그널을 기다리지 않는걸 확인 
+cond 시그널을 기다리는 쓰레드가 존재한다면 이 함수는 실패하고 EBUSY 를 리턴
+
+
+ 
+
+2.11. 예제코드
+
+ 이번장에서 설명한 쓰레드 동기화 관련 예제
+
+예제 : pthrad_sync_api.c
+
+ 
+
+#include <pthread.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <vector>
+#include <iostream>
+
+using namespace std;
+
+void *ping(void *);
+void *pong(void *);
+
+pthread_mutex_t sync_mutex;
+pthread_cond_t  sync_cond;
+
+pthread_mutex_t gmutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t  gcond  = PTHREAD_COND_INITIALIZER;
+
+int main()
+{
+    vector<void *(*)(void *)> thread_list;
+    vector<pthread_t> tident(10); 
+    int thresult;
+    int status;
+    int i;
+
+    pthread_mutex_init(&sync_mutex, NULL);
+    pthread_cond_init(&sync_cond, NULL);
+
+    thread_list.push_back(pong);
+    thread_list.push_back(ping);
+
+    for(i = 0; i < thread_list.size(); i++ )
+    {
+        pthread_mutex_lock(&sync_mutex);
+        if (pthread_create(&tident[i], NULL, thread_list[i], (void *)NULL) <0)
+        {
+            perror("error:");
+            exit(0);
+        }
+        pthread_cond_wait(&sync_cond, &sync_mutex);
+        pthread_mutex_unlock(&sync_mutex);
+    }
+    for (i = 0; i < tident.size(); i++)
+    {
+        pthread_join(tident[i], (void **)&status);
+    }
+}
+
+void *ping(void *data)
+{
+    int i=0;
+    pthread_mutex_lock(&sync_mutex);
+    pthread_cond_signal(&sync_cond);
+    pthread_mutex_unlock(&sync_mutex);
+    while(1)
+    {
+        pthread_mutex_lock(&gmutex);
+        printf("%d : ping\n", i);
+        pthread_cond_signal(&gcond);
+        pthread_cond_wait(&gcond, &gmutex);
+        pthread_mutex_unlock(&gmutex);
+        usleep(random()%100);
+        i++;
+    }
+}
+
+void *pong(void *data)
+{
+    int i = 0;
+    pthread_mutex_lock(&sync_mutex);
+    sleep(1);
+    pthread_cond_signal(&sync_cond);
+    pthread_mutex_unlock(&sync_mutex);
+    while(1)
+    {
+        pthread_mutex_lock(&gmutex);
+        pthread_cond_wait(&gcond, &gmutex);
+        printf("%d : pong\n", i);
+        pthread_cond_signal(&gcond);
+        pthread_mutex_unlock(&gmutex);
+        i++;
+    }
+}
+   
+
+
+위의 예제는 ping&pong 프로그램으로 ping 쓰레드와 pong 쓰레드가 각각 번갈아가면서 "ping", "pong" 을 날리는 프로그램
+->2개의 영역에 걸쳐서 크리티컬섹션이 지정되어 있으며 각 크리티컬섹션안에는 쓰레드 동기화를 위해서 ptread_cond_signal 이 쓰여짐
+
+위의 코드는 기본적으로 pong 쓰레드가 먼저 시그널을 대기
+그 후 ping 쓰레드가 진입해서 "ping"을 날리고 시그널을 발생시키면 "pong" 메시지를 발생 
+※while 문에 있는 크리티컬 섹션에 반드시 pong 쓰레드가 먼저 진입할수 있도록 만들어줘야 함(위의 코드에서는 pong 쓰레드를 먼저 생성) 
+pong 쓰레드에서 크리티컬섹션에 들어가기 위해서 어떤 부가적인 작업이 있다고 했을때(메모리초기화, 기타 다른 함수 호출과 같은, 위에서는 sleep 으로 대신했다), 의도했던 바와는 다르게 ping 가 먼저 크리티컬섹션에 진입할수도 있는 경우 있음. 이럴경우 2개의 쓰레드는 교착상태에 빠짐(문제발생)
+
+*교착상태
+ping 쓰레드가 크리티컬섹션에 먼저 진입했을경우 ping 쓰레드는 "ping" 출력 및 시그널을 발생
+pong 쓰레드가 "pong"를 출력시키고 시그널을 발생시킬때까지 시그널대기 
+ping 쓰레드가 시그널대기 하게 되면, 크리티컬섹션에 대한 뮤텍스 잠금이 해제-> 뒤늦게 크리티컬섹셔네 진입을 시도하던 pong 가 크리티컬섹션에 진입 ping 쓰레드에서부터 신호가 있는지 대기 그러나 ping 쓰레드는 이미 신호를 날려버렸음으로, pong 쓰레드는 결코 도착하지 않을 신호를 기다리며 영원히 시그널대기 이런식으로 2개의 쓰레드는 교착상태에 빠져 버린다.
+
+*해결책
+쓰레드간 동기화를 이용해서 해결가능 
+위 코드에서는 mutex 잠금과, 조건변수를 이용해서 해결 
+물론 쓰레드간 동기화를 위해서 사용할수 있는 원시적인 방법으로 sleep 나 usleep 같은 함수를 호출하는 방법도 있음 (ping 쓰레드에서 크리티컬 섹션에 진입하기전 1초 정도 sleep 을 주는 식으로 사용가능) 간단하게 사용가능하며 가장 확실한 방법을 제공하지만 추천X 
+
+ 
+
+3. Thread Attribute 함수
+
+
+3-1. int pthread_attr_init(pthread_attr_t *attr);
+    
+thread attribute 객체인 attr을 디폴트 값으로 초기화 
+
+성공할경우 0을 리턴 실패할경우 -1 을 리턴
+
+
+ 
+
+3.2. int pthread_attr_destroy(pthread_attr_t *attr);
+    
+pthread_attr_init에 의해 생성된 thread attribute 객체인 attr을 제거 
+제거된 attr 을 다시 사용하기 위해서는 pthread_attr_init를 이용해서 다시 초기화 실시
+
+
+ 
+
+3-3. int pthread_attr_getscope(const pthread_attr_t *attr, int *scope);
+    
+쓰레드가 어떤 영역(scope)에서 다루어지고 있는지를 얻어오기 위해서 사용 
+PTHREAD_SCOPE_SYSTEM과 PTHREAD_SCOPE_PROCESS 의 2가지 영역중에 선택가능 
+SYSTEM 영역 쓰레드는 user 모드 쓰레드라고 불리우며, PROCESS 쓰레드는 커널모드 쓰레드라고 부름 
+리눅스의 경우 유저모드 쓰레드인데, 즉 커널에서 쓰레드를 스케쥴링하는 방식이 아닌 쓰레드 라이브러리를 통해서 쓰레드를 스케쥴링 하는 방식채택
+
+ 
+예제
+
+#include <pthread.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+
+int main()
+{
+    pthread_attr_t pattr;
+    int scope;
+
+    pthread_attr_init(&pattr);
+
+    pthread_attr_getscope(&pattr, &scope);
+    if (scope == PTHREAD_SCOPE_SYSTEM)
+    {
+        printf("user mode thread\n");
+    }
+    else if (scope ==  PTHREAD_SCOPE_PROCESS)
+    {
+        printf("Kernel mode thread\n");
+    }
+
+    return 1;
+}
+    
+위 프로그램을 컴파일한후 Linux 에서 실행시키면 "user mode thread"를 출력하고 솔라리스 상에서 실행시키면 "kernel mode thread"를 출력
+
+
+ 
+
+3.4. int pthread_attr_setscope(pthread_attr_t *attr, int scope);
+    
+쓰레드가 어떤 영역(scope)에서 작동하게 할것인지 결정하기 위해서 사용 
+리눅스의 경우 Kernel mode 쓰레드를 지원하지 않음으로 오직 PTHREAD_SCOPE_SYSTEM 만을 선택 
+반면 솔라리스는 유저모드와 커널모드중 선택이 가능
+
+pthread_attr_setscope.c
+
+ 
+
+#include <pthread.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+
+int main()
+{
+    pthread_attr_t pattr;
+    int scope;
+
+    pthread_attr_init(&pattr);
+
+    pthread_attr_setscope(&pattr, PTHREAD_SCOPE_PROCESS);
+    pthread_attr_getscope(&pattr, &scope);
+    if (scope == PTHREAD_SCOPE_SYSTEM)
+    {
+        printf("user mode thread\n");
+    }
+    else if (scope ==  PTHREAD_SCOPE_PROCESS)
+    {
+        printf("Kernel mode thread\n");
+    }
+
+    return 1;
+}
+    
+위코드에서 쓰레드가 커널 모드에서 작동하도록 지정 
+리눅스에서 실행시킬경우에는 커널모드로 지정을 했다고 하더라도 유저모드 쓰레드로 작동 
+솔라리스의 경우에는 setscope 로 지정한대로 커널모드에서 작동
+
+
+ 
+
+3-5. int pthread_attr_getdetachstate(pthread_attr_t *attr, int detachstate);
+    
+쓰레드가 join 가능한 상태(PTHREAD_CREATE_JOINABLE) 인지 detached 상태인지 (PTHREAD_CREATE_DETACHED) 인지를 알아낸다. 알아낸 값은 아규먼트 detachstate에 저장
+
+기본은 PTHREAD_CREATE_JOINABLE 이며, pthread_detach를 이용해서 생성된 쓰레드를 detach 상태로 만들었을경우 또는 pthread_attr_setdetachstate함수를 이용해서 쓰레드를 detache 상태로 변경시켰을경우 PTHREAD_CREATE_DETACHED 상태
+
+예제 : pthread_attr_getdetachstate.c
+
+ 
+
+#include <pthread.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+pthread_attr_t attr;
+void *test(void *a)
+{
+    int policy;
+    printf("Thread Create\n");
+    pthread_attr_getdetachstate(&attr, &policy);
+    if (policy == PTHREAD_CREATE_JOINABLE)
+    {
+        printf ("Join able\n");
+    }
+    else if (policy == PTHREAD_CREATE_DETACHED)
+    {
+        printf ("Detache\n");
+    }
+}
+int main()
+{
+    int status;
+    pthread_t p_thread;
+    pthread_attr_init(&attr);
+    if (pthread_create(&p_thread, NULL, test, (void *)NULL) < 0)
+    {
+        exit(0);
+    }
+
+    pthread_join(p_thread, (void **)&status);
+}
+    
+위의 프로그램을 실행시키면 "Join able"를 출력할것이다.
+
+
+ 
+
+3.6. int  pthread_attr_setdetachstate(pthread_attr_t *attr, int detachstate);
+    
+쓰레드의 상태를 PTHREAD_CREATE_JOINABLE 혹은 PTHREAD_CREATE_DETACHED 상태로 변경시키기 위해서 사용 
+
+
+pthread_attr_t attr;
+...
+// JOINABLE 상태로 변경하고자 할때 
+pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+// DETACHED 상태로 변경하고자 할때
+pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+   
+
+ 
+
+4. 쓰레드 시그널 관련
+
+ 쓰레드간 프로세스와 쓰레드간 시그널 전달관련 API. 
+자세한 내용은 쓰레드와 시그널을 참고
+
+ 
+
+4.1. int pthread_sigmask(int how, const sigset_t *newmask, sigset_t *oldmask);
+
+ 
+#include <pthread.h>
+#include <signal.h>
+
+쓰레드에서 시그널은 서로 공유
+그런이유로 만약 프로세스에 시그널이 전달되면 프로세스가 생성된 모든 쓰레드로 시그널이 전달
+ 그러나 특정 쓰레드만 시그널을 받도록 하고 싶을 때 이 함수를 이용
+
+ 
+
+
+4-2. int pthread_kill(pthread_t thread, int signo);
+
+
+#include <pthread.h>
+#include <signal.h>
+
+
+쓰레드 식별번호 thread로 signo번호의 시그널을 전달
+
+
+ 
+
+4.3. int sigwait(const sigset_t *set, int *sig);
+ 
+
+
+#include <pthread.h>
+#include >signal.h>
+
+시그널 전달을 동기적으로 대기
+
+
+5. 쓰레드 취소
+
+ 자세한 내용은 쓰레드 취소와 종료와 pthread_cancel(3)을 참고 여기에서는 인덱스만 제공
+
+ 
+
+5.1. pthread_cancel
+
+ 
+#include <pthread.h>
+
+int pthread_cancel(pthread_t thread);
+   
+
+ 
+
+ 
+
+5.2. pthread_setcancelstate
+
+ 
+#include <pthread.h>
+
+int pthread_setcancelstate(int state, int *oldstate);
+   
+
+ 
+
+ 
+
+5.3. pthread_setcancelstate
+
+ 
+#include <pthread.h>
+
+int pthread_setcancelstate(int state, int *oldstate);
+   
+
+
+
+5.4. pthread_setcanceltype
+
+ 
+
+#include <pthread.h>
+
+int pthread_setcanceltype(int type, int *oldtype);
+   
+
+
+5.5. pthread_testcancel
+
+ 
+#include <pthread.h>
+
+void pthread_testcancel(void);
