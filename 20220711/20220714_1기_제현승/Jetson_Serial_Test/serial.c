@@ -225,10 +225,10 @@ int crc_cal()
 	
 	if(isInt == 1)
 	{
-		crc_res = (I_origin.data<<2) % crc.data; 
+		crc_res = (I_origin.data<<2 + crc.data) % crc.data; 
 	}
 	else
-		crc_res = ((int)(F_origin.data)<<2) % crc.data;
+		crc_res = ((int)(F_origin.data)<<2 + crc.data) % crc.data;
 		
 		return crc_res; 
 	
