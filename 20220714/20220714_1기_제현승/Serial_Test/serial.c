@@ -238,26 +238,13 @@ int crc_check(void)
 }
 
 
-void *readserial_thread(void *pt)
-
+void filt_SerialData()
 {
-
-    int num_bytes = -1;
-
-    unsigned char insert_buf;
-
     unsigned char new_read_data;
-
     unsigned char old_read_data;
-
     int index = 0;
-
-    while(1)
-
-    {
-	    //한바이트 씩 데이터를 읽어 오면서 , 패킷의 구조에 따른 데이터 검사후 data_buf에 데이터 저장
-
-     	while( (num_bytes = read(uart_fd, &insert_buf, 1)   ) > 0 )	
+	
+    while( (num_bytes = read(uart_fd, &insert_buf, 1)   ) > 0 )	
 
         {
 
@@ -270,13 +257,6 @@ void *readserial_thread(void *pt)
 			if(new_read_data == '#' )   
 
             {
-
-				// start_byte = '#';
-
-           
-
-				
-
 				data_buf[index] = new_read_data ;
 
 				index++ ;
@@ -301,7 +281,7 @@ void *readserial_thread(void *pt)
 
 					index++ ;
 /*
-					if(read_serial_data == 'F')
+					if(new_read_data == 'F')
 					//printf("F Received\n");
 					else
 					//printf("I Received \n");
@@ -330,7 +310,7 @@ void *readserial_thread(void *pt)
 				  if( ((data_buf[0] == '#' ) && (data_buf[1] == 'I' )))      
             {
                 memcpy(backup_buf, data_buf, index) ;
-                //g_bATNewCmdFlag = SET ;
+              
 				
 			printf("Current Data:");
             for(int i=0;i<index;i++)
@@ -379,7 +359,23 @@ void *readserial_thread(void *pt)
         	 
     }
 
-        }
+}
+
+void *readserial_thread(void *pt)
+
+{
+
+    int num_bytes = -1;
+
+    unsigned char insert_buf;
+
+
+    while(1)
+
+    {
+	    //한바이트 씩 데이터를 읽어 오면서 , 패킷의 구조에 따른 데이터 검사후 data_buf에 데이터 저장
+	filt_SerialData();
+     }
 
 	
 
