@@ -126,7 +126,7 @@ static int uart_fd;
 
 unsigned char protocal_test[12] ={0,};
 
-unsigned char read_buf [20];
+unsigned char data_buf [20];
 unsigned char backup_buf [20];
 unsigned char crc_buf [2];
 
@@ -230,8 +230,8 @@ int crc_check(void)
 	int crc =0;
 	for(int i=1 ; i<6;i++)
 	{
-		read_buf[i];
-		crc += read_buf[i];
+		data_buf[i];
+		crc += data_buf[i];
 	}
 	
 	return crc;
@@ -246,11 +246,11 @@ void *readserial_thread(void *pt)
 
     unsigned char insert_buf;
 
-    unsigned char read_serial_data;
+    unsigned char new_read_data;
 
-    unsigned char read_serial_data_old;
+    unsigned char old_read_data;
 
-    int g_ucCmdATCount = 0;
+    int index = 0;
 
     while(1)
 
@@ -260,13 +260,13 @@ void *readserial_thread(void *pt)
 
         {
 
-			read_serial_data = insert_buf;
+			new_read_data = insert_buf;
 
 			
 
 			//printf("%x\n",read_serial_data);
 
-			if(read_serial_data == '#' )         // 첫번째 문자 입력..
+			if(new_read_data == '#' )         // 첫번째 문자 입력..
 
             {
 
@@ -276,28 +276,29 @@ void *readserial_thread(void *pt)
 
 				// g_ucCmdATCount = 0 ;
 
-				read_buf[g_ucCmdATCount] = read_serial_data ;
+				data_buf[index] = new_read_data ;
 
-				g_ucCmdATCount++ ;
+				index++ ;
 
 				//printf("# Received\n");
 
             }   
 
-			else if( (read_serial_data == 'I' ) || (read_serial_data == 'F' ))
+			else if( (new_read_data == 'I' ) || (new_read_data == 'F' ))
 
 			{
 
-				if(read_serial_data_old =='#')
+				if(old_read_data =='#')
 				{                      
+					
+					index = 1 ;
+					data_buf[0] = '#' ;
 
-					read_buf[0] = '#' ;
+					
 
-					g_ucCmdATCount = 1 ;
+					data_buf[index] = new_read_data ;
 
-					read_buf[g_ucCmdATCount] = read_serial_data ;
-
-					g_ucCmdATCount++ ;
+					index++ ;
 /*
 					if(read_serial_data == 'F')
 					//printf("F Received\n");
@@ -307,41 +308,41 @@ void *readserial_thread(void *pt)
 				}
 				else
               			{
-                 			read_buf[g_ucCmdATCount] = read_serial_data ;
-                 			g_ucCmdATCount++ ;
+                 			data_buf[index] = new_read_data ;
+                 			index++ ;
 
              	 		}                   
 				                  
 
 			}
-			else if( read_serial_data == '*' ) // 끝문자 검색
+			else if( new_read_data == '*' ) // 끝문자 검색
 
 			{
 					//printf("* Received \n");
           
 
-				read_buf[g_ucCmdATCount] = read_serial_data ;
+				data_buf[index] = new_read_data ;
 					//printf("Count: %d",g_ucCmdATCount);
 				 
-				g_ucCmdATCount++ ;
+				index++ ;
 				//||((read_buf[0] == '#' ) && (read_buf[1] == 'F' )
-				  if( ((read_buf[0] == '#' ) && (read_buf[1] == 'I' )))          // 첫번째 문자 검색, data accepted.. '#' + 'S' + 2byte+ 4 byte + '*'
+				  if( ((data_buf[0] == '#' ) && (data_buf[1] == 'I' )))          // 첫번째 문자 검색, data accepted.. '#' + 'S' + 2byte+ 4 byte + '*'
             {
-                memcpy(backup_buf, read_buf, g_ucCmdATCount) ;
+                memcpy(backup_buf, data_buf, index) ;
                 //g_bATNewCmdFlag = SET ;
 				
 			printf("Received Data:");
-            for(int i=0;i<g_ucCmdATCount;i++)
+            for(int i=0;i<index;i++)
             {
-				printf("%x ",read_buf[i]);
+				printf("%x ",data_buf[i]);
 			}                      
 			printf("\n"); 
                 
                 int crc_result=0x00;
 			crc_result = crc_check();
 			
-			m_crc.bytedata[0]=read_buf[7];
-			m_crc.bytedata[1]=read_buf[6];
+			m_crc.bytedata[0]=data_buf[7];
+			m_crc.bytedata[1]=data_buf[6];
 			
 			if(m_crc.data == crc_result)
 			{
@@ -361,57 +362,21 @@ void *readserial_thread(void *pt)
             }   
             	
 			
-            	 g_ucCmdATCount = 0 ;
+            	 index = 0 ;
            
         }
         else
         {
-            read_buf[g_ucCmdATCount] = read_serial_data ;
-            g_ucCmdATCount++ ;
+            data_buf[index] = new_read_data ;
+            index++ ;
         }
        
-        	read_serial_data_old  =  read_serial_data;
+        	old_read_data  =  new_read_data;
         	
         
         	 
         	 
     }
-
-				
-				
-
- 
-                        
-
-       
-
-	    
-
-				//printf("No read %d\n",num_bytes);
-
-	  /*
-
-	    for(int i=0;i<10;i++)
-
-            {
-
-                read_buf[i]=read_buf[i+1];
-
-            }
-
-            read_buf[10]=insert_buf;*/
-
-            
-
-           
-
-	   
-
-	   // for(int i=0;i<10;i++)	    printf("%c", read_buf[i]);
-
-	   // printf("\n");
-
-	   
 
         }
 
@@ -458,166 +423,6 @@ void send_serial_data(void)
 }
 
  
-
-//unsigned char g_ucATPacketMade[8]={0,};
-
-//interrupt [USART0_RXC] 
-
-/*void usart0_rx_isr(void)
-
-{
-
-    unsigned char l_cRxData ;
-
-    unsigned char l_cRxData_old ; 
-
-    int g_ucCmdATCount = 0;
-
-   
-
-    if( UCSR0A & 0x80 )
-
-    {       
-
-        l_cRxData = insert_buf;
-
-        
-
-        if(l_cRxData == '#' )         // 첫번째 문자 입력..
-
-        {
-
-           // start_byte = '#';
-
-           
-
-           // g_ucCmdATCount = 0 ;
-
-            read_buf[g_ucCmdATCount] = l_cRxData ;
-
-            g_ucCmdATCount++ ;
-
- 
-
-        }   
-
-        else if( (l_cRxData == 's' ) || (l_cRxData == 'c' ))
-
-        {
-
-              if(l_cRxData_old =='#')
-
-              {                      
-
-                 read_buf[0] = '#' ;
-
-                 g_ucCmdATCount = 1 ;
-
-                 read_buf[g_ucCmdATCount] = l_cRxData ;
-
-                 g_ucCmdATCount++ ;
-
-              }
-
-              else
-
-              {
-
-                 read_buf[g_ucCmdATCount] = l_cRxData ;
-
-                 g_ucCmdATCount++ ;
-
-              }                   
-
-        }
-
-       
-
-        else if( l_cRxData == '*' ) // 끝문자 검색
-
-        {
-
-          
-
-            read_buf[g_ucCmdATCount] = l_cRxData ;
-
-            g_ucCmdATCount++ ;
-
- 
-
-            if( (read_buf[0] == '#' ) && (read_buf[1] == 's' ))          // 첫번째 문자 검색, data accepted.. '#' + 'S' + 2byte+ 4 byte + '*'
-
-            {
-
-                memcpy(g_ucATPacketMade, read_buf, g_ucCmdATCount) ;
-
-                //g_bATNewCmdFlag = SET ;
-
-               
-
-                m_robot_angle.bytedata[0] =  g_ucATPacketMade[2];
-
-                m_robot_angle.bytedata[1] =  g_ucATPacketMade[3];
-
-               
-
-                if(m_robot_angle.data <= MAX_R_ANGLE)  m_robot_angle.data = MAX_R_ANGLE;
-
-                if(m_robot_angle.data >= MAX_L_ANGLE)  m_robot_angle.data = MAX_L_ANGLE;  
-
-                steer_angle = m_robot_angle.data; 
-
-               
-
-               
-
-               
-
-                m_robot_speed.bytedata[0] =  g_ucATPacketMade[4];
-
-                m_robot_speed.bytedata[1] =  g_ucATPacketMade[5];
-
-                m_robot_speed.bytedata[2] =  g_ucATPacketMade[6];
-
-                m_robot_speed.bytedata[3] =  g_ucATPacketMade[7];
-
-               
-
-                if(m_robot_speed.data >=  MAX_ROBOT_SPEED)    m_robot_speed.data = MAX_ROBOT_SPEED;
-
-                if(m_robot_speed.data <=  MIN_ROBOT_SPEED)    m_robot_speed.data = MIN_ROBOT_SPEED;
-
-               
-
-                robot_speed =  m_robot_speed.data;         
-
-                               
-
-            }                            
-
-            g_ucCmdATCount = 0 ;
-
-        }
-
-        else
-
-        {
-
-            read_buf[g_ucCmdATCount] = l_cRxData ;
-
-            g_ucCmdATCount++ ;
-
-        }
-
-       
-
-        l_cRxData_old =  l_cRxData;
-
-    }
-
-}
-
-*/
 
 int main(void)
 
