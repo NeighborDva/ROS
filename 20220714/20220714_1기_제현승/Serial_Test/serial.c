@@ -237,12 +237,14 @@ int crc_check(void)
 	return crc;
 }
 
-
+ int num_bytes = -1;
+ unsigned char insert_buf;
+ unsigned char new_read_data;
+ unsigned char old_read_data;
+ int index_data = 0;
 void filt_SerialData()
 {
-    unsigned char new_read_data;
-    unsigned char old_read_data;
-    int index = 0;
+    
 	
     while( (num_bytes = read(uart_fd, &insert_buf, 1)   ) > 0 )	
 
@@ -257,9 +259,9 @@ void filt_SerialData()
 			if(new_read_data == '#' )   
 
             {
-				data_buf[index] = new_read_data ;
+				data_buf[index_data] = new_read_data ;
 
-				index++ ;
+				index_data++ ;
 
 				//printf("# Received\n");
 
@@ -272,14 +274,14 @@ void filt_SerialData()
 				if(old_read_data =='#')
 				{                      
 					
-					index = 1 ;
+					index_data = 1 ;
 					data_buf[0] = '#' ;
 
 					
 
-					data_buf[index] = new_read_data ;
+					data_buf[index_data] = new_read_data ;
 
-					index++ ;
+					index_data++ ;
 /*
 					if(new_read_data == 'F')
 					//printf("F Received\n");
@@ -289,8 +291,8 @@ void filt_SerialData()
 				}
 				else
               			{
-                 			data_buf[index] = new_read_data ;
-                 			index++ ;
+                 			data_buf[index_data] = new_read_data ;
+                 			index_data++ ;
 
              	 		}                   
 				                  
@@ -302,18 +304,18 @@ void filt_SerialData()
 					//printf("* Received \n");
           
 
-				data_buf[index] = new_read_data ;
+				data_buf[index_data] = new_read_data ;
 					//printf("Count: %d",index);
 				 
-				index++ ;
+				index_data++ ;
 				//||((read_buf[0] == '#' ) && (read_buf[1] == 'F' )
 				  if( ((data_buf[0] == '#' ) && (data_buf[1] == 'I' )))      
             {
-                memcpy(backup_buf, data_buf, index) ;
+                memcpy(backup_buf, data_buf, index_data) ;
               
 				
 			printf("Current Data:");
-            for(int i=0;i<index;i++)
+            for(int i=0;i<index_data;i++)
             {
 				printf("%x ",data_buf[i]);
 			}                      
@@ -343,13 +345,13 @@ void filt_SerialData()
             }   
             	
 			
-            	 index = 0 ;
+            	 index_data = 0 ;
            
         }
         else
         {
-            data_buf[index] = new_read_data ;
-            index++ ;
+            data_buf[index_data] = new_read_data ;
+            index_data++ ;
         }
        
         	old_read_data  =  new_read_data;
@@ -364,23 +366,12 @@ void filt_SerialData()
 void *readserial_thread(void *pt)
 
 {
-
-    int num_bytes = -1;
-
-    unsigned char insert_buf;
-
-
     while(1)
 
     {
-	    //한바이트 씩 데이터를 읽어 오면서 , 패킷의 구조에 따른 데이터 검사후 data_buf에 데이터 저장
+	//한바이트 씩 데이터를 읽어 오면서 , 패킷의 구조에 따른 데이터 검사후 data_buf에 데이터 저장
 	filt_SerialData();
      }
-
-	
-
-	
-
     }
 
  
