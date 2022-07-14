@@ -264,7 +264,7 @@ void *readserial_thread(void *pt)
 
 			
 
-			//printf("%x\n",read_serial_data);
+			//printf("%x\n",new_read_data);
 
 			if(new_read_data == '#' )         // 첫번째 문자 입력..
 
@@ -274,7 +274,7 @@ void *readserial_thread(void *pt)
 
            
 
-				// g_ucCmdATCount = 0 ;
+				
 
 				data_buf[index] = new_read_data ;
 
@@ -315,7 +315,7 @@ void *readserial_thread(void *pt)
 				                  
 
 			}
-			else if( new_read_data == '*' ) // 끝문자 검색
+			else if( new_read_data == '*' ) 
 
 			{
 					//printf("* Received \n");
@@ -326,7 +326,7 @@ void *readserial_thread(void *pt)
 				 
 				index++ ;
 				//||((read_buf[0] == '#' ) && (read_buf[1] == 'F' )
-				  if( ((data_buf[0] == '#' ) && (data_buf[1] == 'I' )))          // 첫번째 문자 검색, data accepted.. '#' + 'S' + 2byte+ 4 byte + '*'
+				  if( ((data_buf[0] == '#' ) && (data_buf[1] == 'I' )))      
             {
                 memcpy(backup_buf, data_buf, index) ;
                 //g_bATNewCmdFlag = SET ;
