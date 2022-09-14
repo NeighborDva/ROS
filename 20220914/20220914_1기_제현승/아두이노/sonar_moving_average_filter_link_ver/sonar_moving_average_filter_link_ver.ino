@@ -71,7 +71,7 @@ void loop() {
 
   
   double x_meas=0.0;
-  init_res();
+  //init_res(); // link ver은 이것때문에 파형이 출렁임
   
   for(int i=0; i<N_DATA;i++)
   {
