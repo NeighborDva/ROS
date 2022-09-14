@@ -74,12 +74,7 @@ int main()
 	double x_meas=0.0;
 	mov_avg_filt result;
 	
-	for(int i=0; i<N_DATA;i++)//ones 1로 초기화
-	{
-		result.x_n[i] = 1.0;
-	}
-	//	result.x_n[N_DATA]={1.0,}; //이방식으로 하니  error: expected expression before ‘{’ token 에러 발생
-	result.x_avg = 0.0;
+	
 	
 	printf("movig filter 함수 선택-1.git hub 2.게시글 \n");
 	printf("선택: ");
@@ -87,6 +82,12 @@ int main()
 	
 	if(mode == 1) //파이썬 변환
 	{
+		for(int i=0; i<N_DATA;i++)//ones 1로 초기화
+	{
+		result.x_n[i] = 1.0;
+	}
+	//	result.x_n[N_DATA]={1.0,}; //이방식으로 하니  error: expected expression before ‘{’ token 에러 발생
+	result.x_avg = 0.0;
 	for(int i=0; i<N_DATA;i++)
 	{
 		//k = i+1;
@@ -111,6 +112,12 @@ int main()
 	}
 	else if(mode == 2)//링크 게시글참조
 	{
+		for(int i=0; i<N_DATA;i++)//ones 0으로 초기화
+	{
+		result.x_n[i] = 0.0;
+	}
+	//	result.x_n[N_DATA]={0.0,}; //이방식으로 하니  error: expected expression before ‘{’ token 에러 발생
+	result.x_avg = 0.0;
 	for(int i=0; i<N_DATA;i++)
 	{
 		x_meas = get_sonar();
