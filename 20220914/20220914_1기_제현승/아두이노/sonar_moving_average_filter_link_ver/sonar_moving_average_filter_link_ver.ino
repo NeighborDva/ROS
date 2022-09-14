@@ -28,7 +28,7 @@ void init_res()
 {
 for(int i=0; i<N_DATA;i++)//ones 1로 초기화
   {
-    res.x_n[i] = 1.0;
+    res.x_n[i] = 0.0;
   }
   //  result.x_n[N_DATA]={1.0,}; //이방식으로 하니  error: expected expression before ‘{’ token 에러 발생
   res.x_avg = 0.0;
